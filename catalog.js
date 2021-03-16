@@ -1,6 +1,6 @@
 // posting degrees and programs
 !(function ($) {
-  window.onload = function () {
+  window.onload = function getPrograms() {
     $(".ba, .ma, .phd, .cert").css("display", "block");
     $(".container").css("display", "block");
     var glanceExpander =
@@ -15,7 +15,9 @@
     var countSub;
     var countSubTotal;
     var countTotal;
+    var hiddenDegrees;
     var degreeObj = $(".deg");
+    var degObjChild;
     // count number of degrees being displayed
     function degreeCount() {
       var countArr = [];
@@ -25,14 +27,14 @@
       for (var i in degreeObj) {
         var countSubArr = [];
         countSub = 0;
-        var degObjChild = degreeObj[i].children;
+        degObjChild = degreeObj[i].children;
         // loop through all degree children
         for (var j in degObjChild) {
           // setting list class style
-          var listStyle = degObjChild[j].attributes;
+          listStyle = degObjChild[j].attributes;
           // counting degrees for each program
           if (listStyle) {
-            if (listStyle[1].value == "display: block;") {
+            if (listStyle[1].value == "display: block;" || listStyle[1].value == "display: block; visibility: hidden;" || listStyle[1].value == "display: block; visibility: visible;") {
               countSub++;
               countSubArr.push(countSub);
             }
@@ -46,8 +48,8 @@
               var containerStyle = listParent.parentElement.style.display;
               //checking if list div and parent container are both showing and counting if so
               if (
-                listStyle[1].value == "display: block;" &&
-                containerStyle == "block"
+                listStyle[1].value == "display: block;" || listStyle[1].value == "display: block; visibility: hidden;" || listStyle[1].value == "display: block; visibility: visible;" &&
+                containerStyle == "block;"
               ) {
                 count++;
                 // push degree count into array and get the total amount
@@ -77,27 +79,32 @@
       //  checking the holding container of the program at a glance button that has been clicked
       if (thisDegreeContainer != undefined) {
         // grabbing number of degrees for this program
-        var thisDegreeCount = thisDegreeContainer.previousElementSibling.children[1].innerHTML
+        var thisDegreeCount = thisDegreeContainer.previousElementSibling.children[1].innerHTML;
         // if less than 2 programs don't factor view more button and continue to adjust height normally
         if (thisDegreeCount > 3) {
-            // if view more expander has already been clicked when user clicks program at a glance 
-            // and max height is none, don't readjust height (which collapses entire container)
-            if (thisDegreeContainer.style.maxHeight === "none") {
-              return;
-            }
+          // if view more expander has already been clicked when user clicks program at a glance 
+          // and max height is none, don't readjust height (which collapses entire container)
+          if (thisDegreeContainer.style.maxHeight === "none") {
+            return;
           }
         }
+      }
       var lastEl;
       var heightArr = [];
       var expandButton;
+      var listCountSub = 0;
+      var headerHeight;
       for (var i in degreeObj) {
         var maxHeight;
         if (degreeObj[i].previousElementSibling) {
-          var headerHeight = degreeObj[i].previousElementSibling.clientHeight;
+          headerHeight = degreeObj[i].previousElementSibling.clientHeight;
         }
         var listCount = 0;
         if (degreeObj[i]) {
-          var degObjChild = degreeObj[i].children;
+          if (degreeObj[i].children === undefined) {
+            continue;
+          }
+          degObjChild = degreeObj[i].children;
           // checking if expand button exists on page and assigning
           if (degreeObj[i].nextElementSibling) {
             expandButton = degreeObj[i].nextElementSibling;
@@ -107,15 +114,18 @@
             }
           }
         }
+        var visibleArr = [];
         for (var j in degObjChild) {
           if (degObjChild[j].style) {
             // height of each degree list
             var childHeight = degObjChild[j].clientHeight;
             // if degree child list is showing on page
             if (degObjChild[j].style.display == "block" && childHeight != 0) {
+              visibleArr.push(degObjChild[j]);
               listCount++;
-              // show expander if more than 3 programs are available
               if (listCount > 3) {
+                // grabbing degrees that are available for each program but are hidden by the expander
+                hiddenDegrees = visibleArr.slice(3, visibleArr.length);
                 $(expandButton).show();
               } else {
                 $(expandButton).hide();
@@ -151,6 +161,8 @@
             }
           }
         }
+        // hiding degrees from screen reader
+        $(hiddenDegrees).css({ "visibility": "hidden" });
       }
     }
     adjustHeight();
@@ -174,70 +186,63 @@
       // making sure program buttons are disabled until degree button is pushed
       $(this).addClass("active");
       $(".program-button").attr("disabled", false).removeClass("disabled");
-      // degree button show/hide logic
-      this.id == "certificates"
-        ? $(
-            ".ba, .phd, .ma, .technology, .dissertation, .health-sciences, .social, .glance-expander"
-          ).hide() &
-          $(".cert, .law").show() &
-          $(
-            "#health-sciences, #technology, #dissertation-completion, #social-work"
-          )
-            .attr("disabled", true)
-            .addClass("disabled")
-            .removeClass("active")
-        : this.id == "bachelors"
-        ? $(
-            ".cert, .phd, .ma, .mft, .dissertation, .health-sciences, .technology, .social, .education"
-          ).hide() &
-          $(".ba, .glance-expander").show() &
+      this.id == "certificates" ? $(".ba, .phd, .ma, .technology, .dissertation, .health-sciences, .social, .glance-expander").attr('style', 'display: none !important') &
+        $(".cert, .law").attr('style', 'display: block;') & $('input#bachelors, input#masters, input#doctoral').prop("checked", false) &
+        $(
+          "#health-sciences, #technology, #dissertation-completion, #social-work"
+        )
+          .attr("disabled", true)
+          .addClass("disabled")
+          .removeClass("active")
+          .prop("checked", false)
+        & $('label[for="health-sciences"], label[for="technology"], label[for="dissertation-completion"], label[for="social-work"]').addClass("disabled") & $('label[for="education"], label[for="marriage-and-family-therapy"], label[for="business"], label[for="psychology"]').removeClass("disabled")
+        : this.id == "bachelors" ? $(
+          ".cert, .phd, .ma, .mft, .dissertation, .health-sciences, .technology, .social, .education"
+        ).attr('style', 'display: none') &
+          $(".ba, .glance-expander").attr('style', 'display: block;') & $('input#certificates, input#masters, input#doctoral').prop("checked", false) &
           $(
             "#health-sciences, #marriage-and-family-therapy, #technology, #dissertation-completion, #social-work, #education"
           )
             .attr("disabled", true)
             .addClass("disabled")
             .removeClass("active")
-        : this.id == "masters"
-        ? $(".cert, .phd, .ba, .dissertation, .law").hide() &
-          $(".ma, .glance-expander").show() &
-          $("#dissertation-completion, #law")
-            .attr("disabled", true)
-            .addClass("disabled")
-            .removeClass("active")
-        : this.id == "doctoral"
-        ? $(".ba, .cert, .ma, .social").hide() &
-          $(".phd, .glance-expander").show() &
-          $("#social-work")
-            .attr("disabled", true)
-            .addClass("disabled")
-            .removeClass("active")
-        : console.log("error");
+            .prop("checked", false)
+          & $('label[for="health-sciences"], label[for="technology"], label[for="dissertation-completion"], label[for="social-work"], label[for="education"], label[for="marriage-and-family-therapy"]').addClass("disabled") & $('label[for="law"]').removeClass("disabled").prop("checked", false)
+          : this.id == "masters" ? $(".cert, .phd, .ba, .dissertation, .law").attr('style', 'display: none') &
+            $(".ma, .glance-expander").attr('style', 'display: block;') & $('input#certificates, input#bachelors, input#doctoral').prop("checked", false) &
+            $("#dissertation-completion, #law")
+              .attr("disabled", true)
+              .addClass("disabled")
+              .removeClass("active")
+              .prop("checked", false)
+            & $('label[for="dissertation-completion"], label[for="law"]').addClass("disabled") & $('label[for="health-sciences"], label[for="social-work"], label[for="technology"], label[for="education"], label[for="marriage-and-family-therapy"], label[for="business"], label[for="psychology"]').removeClass("disabled").prop("checked", false)
+            : this.id == "doctoral" ? $(".ba, .cert, .ma, .social").attr('style', 'display: none') &
+              $(".phd, .glance-expander").attr('style', 'display: block;') & $('input#certificates, input#bachelors, input#masters').prop("checked", false) &
+              $("#social-work")
+                .attr("disabled", true)
+                .addClass("disabled")
+                .removeClass("active")
+                .prop("checked", false)
+              & $('label[for="social-work"]').addClass("disabled") & $('label[for="health-sciences"], label[for="technology"], label[for="dissertation-completion"], label[for="education"], label[for="marriage-and-family-therapy"], label[for="law"], label[for="business"], label[for="psychology"]').removeClass("disabled").prop("checked", false)
+              : console.log("error");
       if ($(".program-button").hasClass("active")) {
-        $("#business").hasClass("active")
-          ? $(".business").show()
-          : $(".business").hide();
-        $("#education").hasClass("active")
-          ? $(".education").show()
-          : $(".education").hide();
-        $("#health-sciences").hasClass("active")
-          ? $(".health-sciences").show()
-          : $(".health-sciences").hide();
-        $("#marriage-and-family-therapy").hasClass("active")
-          ? $(".mft").show()
-          : $(".mft").hide();
-        $("#psychology").hasClass("active")
-          ? $(".psychology").show()
-          : $(".psychology").hide();
-        $("#technology").hasClass("active")
-          ? $(".technology").show()
-          : $(".technology").hide();
-        $("#dissertation-completion").hasClass("active")
-          ? $(".dissertation").show()
-          : $(".dissertation").hide();
-        $("#social-work").hasClass("active")
-          ? $(".social").show()
-          : $(".social").hide();
-        $("#law").hasClass("active") ? $(".law").show() : $(".law").hide();
+        $("#business").hasClass("active") ? $(".business").show()
+          : $(".business").hide() & $(".business-degrees").children().css({ "display": "none" });
+        $("#education").hasClass("active") ? $(".education").show()
+          : $(".education").hide() & $(".education-degrees").children().css({ "display": "none" });
+        $("#health-sciences").hasClass("active") ? $(".health-sciences").show()
+          : $(".health-sciences").hide() & $(".health-sciences-degrees").children().css({ "display": "none" });
+        $("#marriage-and-family-therapy").hasClass("active") ? $(".mft").show()
+          : $(".mft").hide() & $(".mft-degrees").children().css({ "display": "none" });
+        $("#psychology").hasClass("active") ? $(".psychology").show()
+          : $(".psychology").hide() & $(".psychology-degrees").children().css({ "display": "none" });
+        $("#technology").hasClass("active") ? $(".technology").show()
+          : $(".technology").hide() & $(".technology-degrees").children().css({ "display": "none" });
+        $("#dissertation-completion").hasClass("active") ? $(".dissertation").show()
+          : $(".dissertation").hide() & $(".dissertation-degrees").children().css({ "display": "none" });
+        $("#social-work").hasClass("active") ? $(".social").show()
+          : $(".social").hide() & $(".social-degrees").children().css({ "display": "none" });
+        $("#law").hasClass("active") ? $(".law").show() : $(".law").hide() & $(".law-degrees").children().css({ "display": "none" });
       }
       $(".degree-count").text("");
       $(".count-num").text("");
@@ -251,34 +256,27 @@
       // if someone clicks on program button that's currently active do stuff
       if ($(this).hasClass("active")) {
         $(this).toggleClass("active");
-        $("#business").hasClass("active")
-          ? $(".business").toggle()
-          : $(".business").hide();
-        $("#education").hasClass("active")
-          ? $(".education").toggle()
-          : $(".education").hide();
-        $("#health-sciences").hasClass("active")
-          ? $(".health-sciences").toggle()
-          : $(".health-sciences").hide();
-        $("#marriage-and-family-therapy").hasClass("active")
-          ? $(".mft").toggle()
-          : $(".mft").hide();
-        $("#psychology").hasClass("active")
-          ? $(".psychology").toggle()
-          : $(".psychology").hide();
-        $("#technology").hasClass("active")
-          ? $(".technology").toggle()
-          : $(".technology").hide();
-        $("#dissertation-completion").hasClass("active")
-          ? $(".dissertation").toggle()
-          : $(".dissertation").hide();
-        $("#social-work").hasClass("active")
-          ? $(".social").toggle()
-          : $(".social").hide();
-        $("#law").hasClass("active") ? $(".law").toggle() : $(".law").hide();
+        $("#business").hasClass("active") ? $(".business").toggle()
+          : $(".business").hide() & $(".business-degrees").children().css({ "display": "none" });
+        $("#education").hasClass("active") ? $(".education").toggle()
+          : $(".education").hide() & $(".education-degrees").children().css({ "display": "none" });
+        $("#health-sciences").hasClass("active") ? $(".health-sciences").toggle()
+          : $(".health-sciences").hide() & $(".health-sciences-degrees").children().css({ "display": "none" });
+        $("#marriage-and-family-therapy").hasClass("active") ? $(".mft").toggle()
+          : $(".mft").hide() & $(".mft-degrees").children().css({ "display": "none" });
+        $("#psychology").hasClass("active") ? $(".psychology").toggle()
+          : $(".psychology").hide() & $(".psychology-degrees").children().css({ "display": "none" });
+        $("#technology").hasClass("active") ? $(".technology").toggle()
+          : $(".technology").hide() & $(".technology-degrees").children().css({ "display": "none" });
+        $("#dissertation-completion").hasClass("active") ? $(".dissertation").toggle()
+          : $(".dissertation").hide() & $(".dissertation-degrees").children().css({ "display": "none" });
+        $("#social-work").hasClass("active") ? $(".social").toggle()
+          : $(".social").hide() & $(".social-degrees").children().css({ "display": "none" });
+        $("#law").hasClass("active") ? $(".law").toggle() : $(".law").hide() & $(".law-degrees").children().css({ "display": "none" });
         // if no program buttons are active click currently active degree button
         if ($(".program-button").hasClass("active") == false) {
           if ($(".degree-button").hasClass("active") == false) {
+            $(degreeObj).children().css({ "display": "block" });
             $(".container").show();
             $(".expander").show();
             degreeCount();
@@ -296,54 +294,95 @@
       }
       // program button show/hide logic
       $(this).addClass("active");
-      this.id == "business" || $("#business").hasClass("active")
-        ? $("#business").addClass("active") & $(".business").toggle()
-        : $(".business").hide();
-      this.id == "education" || $("#education").hasClass("active")
-        ? $("#education").addClass("active") & $(".education").toggle()
-        : $(".education").hide();
-      this.id == "health-sciences" || $("#health-sciences").hasClass("active")
-        ? $("#health-sciences").addClass("active") &
-          $(".health-sciences").toggle()
-        : $(".health-sciences").hide();
-      this.id == "marriage-and-family-therapy" ||
-      $("#marriage-and-family-therapy").hasClass("active")
-        ? $("#marriage-and-family-therapy").addClass("active") &
-          $(".mft").toggle()
-        : $(".mft").hide();
-      this.id == "psychology" || $("#psychology").hasClass("active")
-        ? $("#psychology").addClass("active") & $(".psychology").toggle()
-        : $(".psychology").hide();
-      this.id == "technology" || $("#technology").hasClass("active")
-        ? $("#technology").addClass("active") & $(".technology").toggle()
-        : $(".technology").hide();
-      this.id == "dissertation" ||
-      $("#dissertation-completion").hasClass("active")
-        ? $("#dissertation-completion").addClass("active") &
-          $(".dissertation").toggle()
-        : $(".dissertation").hide();
-      this.id == "social" || $("#social-work").hasClass("active")
-        ? $("#social-work").addClass("active") & $(".social").toggle()
-        : $(".social").hide();
-      this.id == "law" || $("#law").hasClass("active")
-        ? $("#law").addClass("active") & $(".law").toggle()
-        : $(".law").hide();
+      if (this.id == "business" || $("#business").hasClass("active")) {
+        $("#business").addClass("active");
+        $(".business").toggle();
+        $(".business-degrees").children().css({ "display": "block" });
+      } else {
+        $(".business").hide() & $(".business-degrees").children().css({ "display": "none" });
+      }
+      if (this.id == "education" || $("#education").hasClass("active")) {
+        $("#education").addClass("active");
+        $(".education").toggle();
+        $(".education-degrees").children().css({ "display": "block" });
+      } else {
+        $(".education").hide() & $(".education-degrees").children().css({ "display": "none" });
+      }
+      if (this.id == "health-sciences" || $("#health-sciences").hasClass("active")) {
+        $("#health-sciences").addClass("active");
+        $(".health-sciences").toggle();
+        $(".health-sciences-degrees").children().css({ "display": "block" });
+      } else {
+        $(".health-sciences").hide() & $(".health-sciences-degrees").children().css({ "display": "none" });
+      }
+      if (this.id == "marriage-and-family-therapy" || $("#marriage-and-family-therapy").hasClass("active")) {
+        $("#marriage-and-family-therapy").addClass("active");
+        $(".mft").toggle();
+        $(".mft-degrees").children().show();
+      } else {
+        $(".mft").hide() & $(".mft-degrees").children().css({ "display": "none" });
+      }
+      if (this.id == "psychology" || $("#psychology").hasClass("active")) {
+        $("#psychology").addClass("active");
+        $(".psychology").toggle();
+        $(".psychology-degrees").children().css({ "display": "block" });
+      } else {
+        $(".psychology").hide() & $(".psychology-degrees").children().css({ "display": "none" });
+      }
+      if (this.id == "technology" || $("#technology").hasClass("active")) {
+        $("#technology").addClass("active");
+        $(".technology").toggle();
+        $(".technology-degrees").children().css({ "display": "block" });
+      } else {
+        $(".technology").hide() & $(".technology-degrees").children().css({ "display": "none" });
+      }
+      if (this.id == "dissertation-completion" || $("#dissertation-completion").hasClass("active")) {
+        $("#dissertation-completion").addClass("active");
+        $(".dissertation").toggle();
+        $(".dissertation-degrees").children().css({ "display": "block" });
+      } else {
+        $(".dissertation-completion").hide() & $(".dissertation-degrees").children().css({ "display": "none" });
+      }
+      if (this.id == "social-work" || $("#social-work").hasClass("active")) {
+        $("#social-work").addClass("active");
+        $(".social").toggle();
+        $(".social-degrees").children().css({ "display": "block" });
+      } else {
+        $(".social-work").hide() & $(".social-degrees").children().css({ "display": "none" });
+      }
+      if (this.id == "law" || $("#law").hasClass("active")) {
+        $("#law").addClass("active");
+        $(".law").toggle();
+        $(".law-degrees").children().css({ "display": "block" });
+      } else {
+        $(".law").hide() & $(".law-degrees").children().css({ "display": "none" });
+      }
+      if ($(".degree-button").hasClass("active") == true) {
+        $(".degree-button.active").click();
+        $(".degree-count").text("");
+        $(".count-num").text("");
+      }
       degreeCount();
       adjustHeight();
     });
     // clear filter button
     $(".filter-button").click(function () {
+      $(".plus").show();
+      $(".minus").hide();
       $(".popup").addClass("slide-down");
       $(".popup").hide();
       $(".glance-expander").show();
       $(".degree-count").text("");
       $(".count-num").text("");
+      $(".list").css("visibility", "");
       $(".deg, .list, .container").show();
+      $(".list").css({ "display": "block" });
       $(".degree-button, .program-button").removeClass("active");
       $(".program-button").attr("disabled", false).removeClass("disabled");
+      $('input.program-button').prop("checked", false);
+      $('input#certificates, input#bachelors, input#doctoral, input#masters').prop("checked", false) &
+        $('label[for="health-sciences"], label[for="technology"], label[for="dissertation-completion"], label[for="social-work"], label[for="education"], label[for="marriage-and-family-therapy"], label[for="law"]').removeClass("disabled");
       $(".expander").show();
-      $(".plus").show();
-      $(".minus").hide();
       $("html, body").animate(
         {
           scrollTop: $(".breadcrumb").scrollTop(),
@@ -355,33 +394,33 @@
     });
     // expand programs button
     $(".expander").click(function () {
+      var visibleElArr = [];
+      // putting all visible elements in seperate array
+      $(this).prev().children().each(function (i, e) {
+        if (e.style.display === "block") {
+          visibleElArr.push(e);
+        }
+      });
+      // element to be focused on after viewing all
+      var refocusedEl = visibleElArr[3].children[0].children[0];
       adjustHeight();
-      this.id == "bus-expand"
-        ? $(".business-degrees").css("max-height", "none") &
-          $("#bus-expand").hide()
-        : this.id == "edu-expand"
-        ? $(".education-degrees").css("max-height", "none") &
+      this.id == "bus-expand" ? $(".business-degrees").css("max-height", "none") & $(this).prev().children().css({ "visibility": "visible" }) & $(refocusedEl).focus() &
+        $("#bus-expand").hide()
+        : this.id == "edu-expand" ? $(".education-degrees").css("max-height", "none") & $(this).prev().children().css({ "visibility": "visible" }) & $(refocusedEl).focus() &
           $("#edu-expand").hide()
-        : this.id == "health-expand"
-        ? $(".health-sciences-degrees").css("max-height", "none") &
-          $("#health-expand").hide()
-        : this.id == "mft-expand"
-        ? $(".mft-degrees").css("max-height", "none") & $("#mft-expand").hide()
-        : this.id == "psy-expand"
-        ? $(".psychology-degrees").css("max-height", "none") &
-          $("#psy-expand").hide()
-        : this.id == "tech-expand"
-        ? $(".technology-degrees").css("max-height", "none") &
-          $("#tech-expand").hide()
-        : this.id == "dis-expand"
-        ? $(".dissertation-degrees").css("max-height", "none") &
-          $("#dis-expand").hide()
-        : this.id == "soc-expand"
-        ? $(".social-degrees").css("max-height", "none") &
-          $("#soc-expand").hide()
-        : this.id == "law-expand"
-        ? $(".law-degrees").css("max-height", "none") & $("#law-expand").hide()
-        : console.log("error");
+          : this.id == "health-expand" ? $(".health-sciences-degrees").css("max-height", "none") & $(this).prev().children().css({ "visibility": "visible" }) & $(refocusedEl).focus() &
+            $("#health-expand").hide()
+            : this.id == "mft-expand" ? $(".mft-degrees").css("max-height", "none") & $(this).prev().children().css({ "visibility": "visible" }) & $(refocusedEl).focus() & $("#mft-expand").hide()
+              : this.id == "psy-expand" ? $(".psychology-degrees").css("max-height", "none") & $(this).prev().children().css({ "visibility": "visible" }) & $(refocusedEl).focus() &
+                $("#psy-expand").hide()
+                : this.id == "tech-expand" ? $(".technology-degrees").css("max-height", "none") & $(this).prev().children().css({ "visibility": "visible" }) & $(refocusedEl).focus() &
+                  $("#tech-expand").hide()
+                  : this.id == "dis-expand" ? $(".dissertation-degrees").css("max-height", "none") & $(this).prev().children().css({ "visibility": "visible" }) & $(refocusedEl).focus() &
+                    $("#dis-expand").hide()
+                    : this.id == "soc-expand" ? $(".social-degrees").css("max-height", "none") & $(this).prev().children().css({ "visibility": "visible" }) & $(refocusedEl).focus() &
+                      $("#soc-expand").hide()
+                      : this.id == "law-expand" ? $(".law-degrees").css("max-height", "none") & $(this).prev().children().css({ "visibility": "visible" }) & $(refocusedEl).focus() & $("#law-expand").hide()
+                        : console.log("error");
     });
     // need to change all bold tags to strong for accessibility
     $("b").each(function () {
@@ -391,12 +430,14 @@
         });
       });
     });
-    $("p.essay-summary").show();
-    $("p.essay-summary").insertBefore(
-      ".form-textarea-wrapper.resizable.textarea-processed.resizable-textarea"
-    );
+    // accessibility changes
+    $(".person-type-filters").wrap('<nav aria-label="person type"></nav>');
+    $(".pager").wrap('<nav aria-label="pager"></nav>');
+    $(".breadcrumb").wrap('<nav aria-label="breadcrumb"></nav>');
+    $(".list a").wrap('<h4></h4>');
+    $(".degree-header a").wrap('<h3></h3>');
+    $(".result-content").children().wrap('<h3></h3>');
     var popup = '<div class="popup></div>';
-
     // pulling programs with catalog api
     function getCatalog(programFinderProgramTitle, currentProgramClick, thisDegreeContainer, popup, plus, minus) {
       // need to set to false initially
@@ -405,7 +446,7 @@
       // need to hide static and dynamic catalog data at first
       $("#why-tab-3").hide();
       $(programGlance).hide();
-      // $('#prog-2').hide()
+      $('#prog-2').hide();
       var programGlance =
         '<div class="program-glance"><h3 class="glance-title">Program at a Glance</h3></div>';
       var loader = '<div class="loader"></div>';
@@ -415,7 +456,7 @@
       jQuery.ajaxPrefilter(function (options) {
         if (options.crossDomain && jQuery.support.cors) {
           options.url =
-            "API" + options.url;
+            "https://morning-fjord-44995.herokuapp.com/" + options.url;
         }
       });
       $(loader).insertAfter("#prog-2");
@@ -430,7 +471,7 @@
       }
       // grabbing all catalogs and their id's and program page titles
       $.get(
-        "API",
+        "http://ncu.apis.acalog.com/v1/content?key=eac7d337c6eba831d33fa2118a162c71535b50a5&format=xml&method=getCatalogs",
         function getCatalogId(data) {
           //grabbing most recent catalog number, first value on second children object is the most recent
           var currentCatalogId = data.children[0].children[1].id.replace(
@@ -489,7 +530,7 @@
           $("#page-title")[0].innerText.toLowerCase() ===
           "programs and degree finder"
         ) {
-          pageTitle = JSON.stringify(programFinderProgramTitle)
+          pageTitle = JSON.stringify(programFinderProgramTitle);
           console.log(pageTitle + " title being pulled if on program finder");
           if (pageTitle) {
             if (pageTitle.includes("bachelor of business")) {
@@ -499,36 +540,38 @@
         }
         // grabbing list of programs based on catalog id and pagetitle we're currently on
         $.get(
-          "API" +
-            currentCatalogId +
-            "&query=" +
-            pageTitle +
-            "&options[sort]=rank&options[group]=degreetype",
+          "http://ncu.apis.acalog.com/v1/search/programs?key=eac7d337c6eba831d33fa2118a162c71535b50a5&format=xml&method=search&catalog=" +
+          currentCatalogId +
+          "&query=" +
+          pageTitle +
+          "&options[sort]=rank&options[group]=degreetype",
           function getProgramId(data) {
-            var hierarchyCount = 0
+            var hierarchyCount = 0;
             var altTitleCheck;
             var allWordsExist = false;
+            var degreeType;
+            var programId;
             // all program hierarchies
             var allProgramHierarchy =
               data.children[0].children[0].children[2].children;
-              // need to grab degree names listed in program heirarchy to match with programs titles on specialization pages
+            // need to grab degree names listed in program heirarchy to match with programs titles on specialization pages
             for (var i = 0; i < allProgramHierarchy.length; i++) {
-              hierarchyCount++
+              hierarchyCount++;
               var degreeName = allProgramHierarchy[i].children[1].innerHTML
                 .toLowerCase()
                 .replace(/[^a-zA-Z ]/g, "");
               var singleProgramHierarchy = allProgramHierarchy[i].children;
               // need to grab degree type from catalog to match with page/program titles on normal pages and degree finder
               if (singleProgramHierarchy) {
-                var degreeType = singleProgramHierarchy[singleProgramHierarchy.length - 1].textContent.toLowerCase();
+                degreeType = singleProgramHierarchy[singleProgramHierarchy.length - 1].textContent.toLowerCase();
               }
               // if we're on programs and degree finder need to keep first letter of each word
               // from degree type capitalized for accurate matches
               if (
                 $("#page-title")[0].innerText.toLowerCase() ===
                 "programs and degree finder"
-              ){
-                var degreeType = JSON.stringify(singleProgramHierarchy[singleProgramHierarchy.length - 1].textContent);
+              ) {
+                degreeType = JSON.stringify(singleProgramHierarchy[singleProgramHierarchy.length - 1].textContent);
               }
               // if we're on specialization pages need to check that each word in the page title exists in degree name we are trying to pull
               // if all words exists, set to true and continue
@@ -537,8 +580,8 @@
                 pageTitle = pageTitle.split(" ");
                 console.log(degreeName);
                 console.log(pageTitle);
-                for (var k = 0; k < pageTitle.length; k++){
-                  if (degreeName.includes(pageTitle[k])){
+                for (var k = 0; k < pageTitle.length; k++) {
+                  if (degreeName.includes(pageTitle[k])) {
                     allWordsExist = true;
                   } else {
                     allWordsExist = false;
@@ -547,14 +590,12 @@
                 }
                 degreeName = degreeName.join(" ");
                 pageTitle = pageTitle.join(" ");
-              // same word to word check for normal pages and degree finder
+                // same word to word check for normal pages and degree finder
               } else {
                 pageTitle = pageTitle.split(" ");
-                console.log(pageTitle)
                 degreeType = degreeType.split(" ");
-                console.log(degreeType)
-                for (var j = 0; j < degreeType.length; j++){
-                  if (pageTitle.includes(degreeType[j])){
+                for (var j = 0; j < degreeType.length; j++) {
+                  if (pageTitle.includes(degreeType[j])) {
                     allWordsExist = true;
                   } else {
                     allWordsExist = false;
@@ -575,7 +616,7 @@
                   allWordsExist === true
                 ) {
                   // set the program id and pull the program content
-                  var programId = allProgramHierarchy[i].children[0].innerHTML;
+                  programId = allProgramHierarchy[i].children[0].innerHTML;
                   console.log(programId + " --PROGRAM ID--");
                   getProgramContent(programId, currentCatalogId, pageTitle);
                   count++;
@@ -587,59 +628,64 @@
             // if the degree we are trying to pull doesn't have all words from the current page title
             // we need to change the page title to the secondary title (specialization pages only) and call the api again
             if (programId === undefined || allWordsExist == false) {
-                altTitleCheck = true;
+              altTitleCheck = true;
               if (specializationPages === true) {
                 pageTitle = fieldBody[0].innerText.toLowerCase().replace(/[^a-zA-Z ]/g, " ");
                 console.log(pageTitle);
-                console.log("PULLING SPECIALIZATION ALT TITLE")
+                console.log("PULLING SPECIALIZATION ALT TITLE");
                 getProgram(currentCatalogId, pageTitle, altTitleCheck);
               }
             }
-              // if we've tried to pull different titles and it's still not working, need to show static data or alt popup
+            // if we've tried to pull different titles and it's still not working, need to show static data or alt popup
+            if (
+              programId === undefined &&
+              allWordsExist === false &&
+              altTitleCheck === true
+            ) {
+              $("#prog-2").show();
+              $(".program-glance").hide();
+              $(".loader").hide();
+              // show alt popup for program finder
               if (
-                programId === undefined &&
-                allWordsExist === false &&
-                altTitleCheck === true
-              )
-             {
-                $("#prog-2").show();
-                $(".program-glance").hide();
-                $(".loader").hide();
-                // show alt popup for program finder
-                if (
-                  $("#page-title")[0].innerText.toLowerCase() ===
-                  "programs and degree finder"
-                ) {
-                  popup = '<div class="popup"><p>Please see <a class="catalog-link" href="https://catalog.ncu.edu/">Course Catalog</a> for more information regarding this program.</p></div>'
-                  $(popup).insertAfter(currentProgramClick)
-                  adjustHeight(thisDegreeContainer)
-                  console.log("showing static data");
-                  return;
-                }
+                $("#page-title")[0].innerText.toLowerCase() ===
+                "programs and degree finder"
+              ) {
+                popup = '<div class="popup"><p>Please see <a class="catalog-link" href="https://catalog.ncu.edu/">Course Catalog</a> for more information regarding this program.</p></div>';
+                $(popup).insertAfter(currentProgramClick);
+                adjustHeight(thisDegreeContainer);
                 console.log("showing static data");
+                return;
               }
+              console.log("showing static data");
+            }
           }
         );
       }
       // grabbing content for all programs
       function getProgramContent(programId, currentCatalogId, pageTitle) {
         $.get(
-          "API" +
-            programId +
-            "&catalog=" +
-            currentCatalogId,
+          "http://ncu.apis.acalog.com/v1/content?key=eac7d337c6eba831d33fa2118a162c71535b50a5&format=xml&method=getItems&type=programs&ids[]=" +
+          programId +
+          "&catalog=" +
+          currentCatalogId,
           function (data) {
             // program listed at the top of the catalog program page
             console.log(
               data.children[0].children[0].children[0].children[0].innerHTML +
-                " --ACTUAL PROGRAM BEING PULLED FROM CATALOG--"
+              " --ACTUAL PROGRAM BEING PULLED FROM CATALOG--"
             );
             var count = 0;
             var countArr = [];
             var courseTotal;
             var specializationTotal;
+            var staticCourseCount;
+            var completionTimeNum;
+            var creditHoursNum;
+            var creditHoursNumCert;
             // access to lists of courses for each program
             var courseLists = data.children[0].children[4].children;
+            // total specializations total
+            // console.log(data.children[0].children[0].children[0].children[6].children[1].children[5].children[0].children[4].children)
             // turning into array
             var courseListsArr = Object.values(courseLists);
             // grabbing lists for each program and counting the number of courses
@@ -648,11 +694,14 @@
               countArr.push(count);
             }
             var countArrNum = countArr.length - 1;
+            if ($("#prog-2").children("p").children()[4]) {
+              staticCourseCount = $("#prog-2").children("p").children()[4].innerHTML.replace(/\D+/g, "");
+            }
             // count total minus "field" element which is not a course
             courseTotal =
               "<div>Courses: " +
               '<p class="bold-glance">' +
-              countArrNum +
+              staticCourseCount +
               " Courses</p></div>";
             // access to all page content non-certs
             var pageContent = data.children[0].children[3].children[0].children;
@@ -662,35 +711,35 @@
             var creditHours;
             console.log(
               programFinderProgramTitle +
-                " --PROGRAM TRYING TO PULL FROM PROGRAM FINDER--"
+              " --PROGRAM TRYING TO PULL FROM PROGRAM FINDER--"
             );
             console.log("vvv-CATALOG PAGE CONTENT-vvv");
             console.log(pageContentArr);
             // need to loop through each child to find completion times and minimum credits required
-            for (var i = 0; i < pageContentArr.length; i++) {
+            for (var j = 0; j < pageContentArr.length; j++) {
               //if page content has children
-              if (pageContentArr[i]) {
+              if (pageContentArr[j]) {
                 // if each page section has a title
-                if (pageContentArr[i].children[0]) {
-                  if (pageContentArr[i].children[0].children[0]) {
+                if (pageContentArr[j].children[0]) {
+                  if (pageContentArr[j].children[0].children[0]) {
                     // all pageTitles
                     var catalogPageTitles = pageContentArr[
-                      i
+                      j
                     ].children[0].children[0].innerHTML.toLowerCase();
                   }
-                  if (pageContentArr[i].children[0].textContent) {
-                    if (pageContentArr[i].children[0].children[3]) {
-                      if (pageContentArr[i].children[0].children[3].children[0])
+                  if (pageContentArr[j].children[0].textContent) {
+                    if (pageContentArr[j].children[0].children[3]) {
+                      if (pageContentArr[j].children[0].children[3].children[0])
                         var creditDescription = pageContentArr[
-                          i
+                          j
                         ].children[0].children[3].children[0].textContent.toLowerCase();
                     }
                   } else {
                     continue;
                   }
-                  var creditHoursNum;
+
                   var overviewTitle = $(".degree").context.title;
-                  function getCredits() {
+                  var getCredits = function () {
                     // if catalog page title is degree requirements
                     if (catalogPageTitles === "degree requirements") {
                       // if we're on any BA pages or specializations pages
@@ -761,22 +810,18 @@
                         creditHoursNum +
                         " Credit Hours</p></div>";
                     }
-                  }
+                  };
                   getCredits();
                   // making sure page content exists (redundant?)
-                  if (pageContentArr[i].children[0].children[3]) {
-                    if (pageContentArr[i].children[0].children[3].children[3]) {
+                  if (pageContentArr[j].children[0].children[3]) {
+                    if (pageContentArr[j].children[0].children[3].children[3]) {
                       // if sentence in time to completion array does not have any numbers after removing characters or the number returned is less than 10 (months) and we aren't on any cert pages (some certs have less than 10) we want to ignore it - might need to find a better way
                       if (
-                        pageContentArr[
-                          i
-                        ].children[0].children[3].children[3].innerHTML.replace(
+                        pageContentArr[j].children[0].children[3].children[3].innerHTML.replace(
                           /\D+/g,
                           ""
                         ) === "" ||
-                        (pageContentArr[
-                          i
-                        ].children[0].children[3].children[3].innerHTML
+                        (pageContentArr[j].children[0].children[3].children[3].innerHTML
                           .replace(/\D+/g, "")
                           .slice(0, 2) < 9 &&
                           JSON.stringify(window.location).includes(
@@ -784,16 +829,11 @@
                           ) === false)
                       ) {
                       } else if (
-                        pageContentArr[
-                          i
-                        ].children[0].children[3].children[3].innerHTML.includes(
+                        pageContentArr[j].children[0].children[3].children[3].innerHTML.includes(
                           "Dean"
                         )
                       ) {
-                        var completionTimeNum = pageContentArr[
-                          i
-                          // regex for removing all text and returning number w/ 2 digit max
-                        ].children[0].children[3].children[3].innerHTML
+                        completionTimeNum = pageContentArr[j].children[0].children[3].children[3].innerHTML
                           .replace(/\D+/g, "")
                           .slice(0, 2);
                         deanCompletionTime =
@@ -855,15 +895,15 @@
                             ) {
                               var outcomesArrInner = outcomesArr[i].children;
                               for (
-                                var i = 0;
-                                i < outcomesArrInner.length;
-                                i++
+                                var j = 0;
+                                j < outcomesArrInner.length;
+                                j++
                               ) {
-                                console.log(outcomesArrInner[i]);
+                                console.log(outcomesArrInner[j]);
 
                                 var outcomesList =
                                   '<li class="outcome-list">' +
-                                  outcomesArrInner[i].innerText +
+                                  outcomesArrInner[j].innerText +
                                   "</li>";
                                 $(outcomesList).insertAfter("div#why-tab-3");
                                 // $(outcomesTab).show();
@@ -893,7 +933,7 @@
                     )[0].children[0].children
                   );
                   var specializationCount = 0;
-                  for (var i = 0; i < specializations.length; i++) {
+                  for (var k = 0; k < specializations.length; k++) {
                     specializationCount++;
                   }
                   specializationTotal =
@@ -915,7 +955,7 @@
               $("#prog-2").show();
               $(".program-glance").hide();
               $(".loader").hide();
-              popup = '<div class="popup"><p>Please see <a class="catalog-link" href="https://catalog.ncu.edu/">Course Catalog</a> for more information regarding this program.</p></div>'
+              popup = '<div class="popup"><p>Please see <a class="catalog-link" href="https://catalog.ncu.edu/">Course Catalog</a> for more information regarding this program.</p></div>';
               $(popup).insertAfter(currentProgramClick);
               adjustHeight();
               console.log("using static program data, check missing data");
@@ -937,21 +977,21 @@
             // if were on program specialization pages
             if (fieldBody[0]) {
               if (fieldBody[0].innerText.includes("Specialization")) {
+
                 creditHoursNum =
                   '<p class="course-info">' + creditHoursNum + "</p>";
                 countArrNum = '<p class="course-info">' + countArrNum + "</p>";
                 completionTimeNum =
                   '<p class="course-info">' + completionTimeNum + " months</p>";
-                $(creditHoursNum).appendTo(".hours");
-                $(countArrNum).appendTo(".courses");
-                $(completionTimeNum).appendTo(".time");
-                $(specializationTotal)
-                  .add(creditHours)
-                  .add(courseTotal)
-                  .add(deanCompletionTime)
-                  .add(startDate)
-                  .add(classSize)
-                  .appendTo(".program-glance");
+                // $(creditHoursNum).appendTo(".hours");
+                // $(completionTimeNum).appendTo(".time");
+                // $(specializationTotal)
+                //   .add(creditHours)
+                //   .add(courseTotal)
+                //   .add(deanCompletionTime)
+                //   .add(startDate)
+                //   .add(classSize)
+                //   .appendTo(".program-glance");
                 $(".loader").hide();
                 // if we're on cert page heirarchies and specializations are listed
               } else if (
@@ -959,7 +999,7 @@
                 (JSON.stringify(window.location).includes("certificate") &&
                   specializations.length > 0)
               ) {
-                var creditHoursNumCert = data.children[0].children[0].children[0].children[6].children[1].children[5].textContent
+                creditHoursNumCert = data.children[0].children[0].children[0].children[6].children[1].children[5].textContent
                   .replace(/\D+/g, "")
                   .slice(0, 2);
                 creditHours =
@@ -1015,6 +1055,62 @@
               $("#page-title")[0].innerText.toLowerCase() ===
               "programs and degree finder"
             ) {
+              // need static number of courses to add to program finder program at a glance
+              switch (programFinderProgramTitle) {
+                case 'Bachelor of Business Administration': staticCourseCount = 20; break;
+                case 'Doctor of Philosophy in Business Administration': staticCourseCount = 20; break;
+                case 'Doctor of Philosophy in Organizational Leadership': staticCourseCount = 19; break;
+                case 'Doctor of Philosophy in Human Resource Management': staticCourseCount = 20; break;
+                case 'Doctor of Business Administration': staticCourseCount = 20; break;
+                case 'Doctor of Criminal Justice': staticCourseCount = 18; break;
+                case 'Doctor of Public Administration': staticCourseCount = 18; break;
+                case 'Master of Business Administration': staticCourseCount = 11; break;
+                case 'Master of Science in Organizational Leadership': staticCourseCount = 11; break;
+                case 'Master of Science in Accounting': staticCourseCount = 13; break;
+                case 'Master of Public Administration': staticCourseCount = 12; break;
+                case 'Master of Human Resource Management': staticCourseCount = 10; break;
+                case 'Master of Legal Studies': staticCourseCount = 11; break;
+                case 'Doctor of Philosophy Technology Innovation Management': staticCourseCount = 26; break;
+                case 'Doctor of Philosophy in Data Science': staticCourseCount = 21; break;
+                case 'Doctor of Philosophy in Computer Science': staticCourseCount = 25; break;
+                case 'Master of Science Technology and Innovation Management': staticCourseCount = 11; break;
+                case 'Master of Science in Data Science': staticCourseCount = 11; break;
+                case 'Master of Science in Cybersecurity': staticCourseCount = 10; break;
+                case 'Master of Science in Information Technology': staticCourseCount = 10; break;
+                case 'Master of Science in Computer Science': staticCourseCount = 10; break;
+                case 'Doctor of Philosophy in Education': staticCourseCount = 22; break;
+                case 'Doctor of Philosophy in Educational Leadership': staticCourseCount = 22; break;
+                case 'Doctor of Philosophy in Instructional Design': staticCourseCount = 22; break;
+                case 'Doctor of Education': staticCourseCount = 22; break;
+                case 'Doctor of Education in Educational Leadership': staticCourseCount = 22; break;
+                case 'Doctor of Education in Instructional Design': staticCourseCount = 20; break;
+                case 'Education Specialist': staticCourseCount = 14; break;
+                case 'Education Specialist in Educational Leadership': staticCourseCount = 14; break;
+                case 'Master of Education': staticCourseCount = 12; break;
+                case 'Master of Education in Educational Leadership': staticCourseCount = 10; break;
+                case 'Master of Science in Instructional Design': staticCourseCount = 12; break;
+                case 'Master of Arts in Teaching': staticCourseCount = 8; break;
+                case 'Bachelor of Arts in Psychology': staticCourseCount = 20; break;
+                case 'Doctor of Philosophy in Psychology': staticCourseCount = 21; break;
+                case 'Master of Arts in Psychology': staticCourseCount = 12; break;
+                case 'Master of Science in Child and Adolescent Developmental Psychology': staticCourseCount = 11; break;
+                case 'Master of Science in Educational Psychology': staticCourseCount = 11; break;
+                case 'Master of Science in Forensic Psychology': staticCourseCount = 11; break;
+                case 'Master of Science in Health Psychology': staticCourseCount = 15; break;
+                case 'Master of Science in Industrial/Organizational Psychology': staticCourseCount = 10; break;
+                case 'Doctor of Philosophy in Marriage and Family Therapy': staticCourseCount = 28; break;
+                case 'Doctorate of Marriage and Family Therapy': staticCourseCount = 29; break;
+                case 'Master of Arts in Marriage and Family Therapy': staticCourseCount = 21; break;
+                case 'Master of Health Administration': staticCourseCount = 14; break;
+                case 'Master of Science in Nursing': staticCourseCount = 12; break;
+                case 'Doctor of Health Administration': staticCourseCount = 18; break;
+                case 'Doctor of Nursing Practice in Executive Leadership': staticCourseCount = 18; break;
+              }
+              courseTotal =
+                "<div>Courses: " +
+                '<p class="bold-glance">' +
+                staticCourseCount +
+                " Courses</p></div>";
               var cta =
                 '<div class="content"><div class="button cta-glance">Request Info</div></div>';
               popup =
@@ -1028,9 +1124,8 @@
               if ($(".glance-expander").hasClass("power-on")) {
                 $(plus).hide();
                 $(minus).show();
-                console.log(plus + " PLUASU")
                 $(popup).insertAfter(currentProgramClick);
-                $(".popup").addClass("active-popup")
+                $(".popup").addClass("active-popup");
                 $(".loader").remove();
                 adjustHeight(thisDegreeContainer);
               }
@@ -1066,15 +1161,16 @@
         $(this).removeClass("power-on");
         $(this).addClass("standby");
         $(popup).addClass("slide-down");
-          $(popup).hide();
-          adjustHeight(thisDegreeContainer);
-          return;
+        $(popup).hide();
+        adjustHeight(thisDegreeContainer);
+        return;
       }
       $(this).addClass("power-on");
       // grabing title for each program giving it to catalog for processing
       var programFinderProgramTitle = this.previousElementSibling
         .previousElementSibling.innerText.replace(/[^a-zA-Z ]/g, " ");
       currentProgramClick = this;
+      console.log(currentProgramClick);
       getCatalog(programFinderProgramTitle, currentProgramClick, thisDegreeContainer, popup, plus, minus);
     });
   };
