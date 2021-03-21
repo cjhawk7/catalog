@@ -1,7 +1,6 @@
 // posting degrees and programs
-var $ = window.jQuery;
 !(function ($) {
-  function getPrograms() {
+  window.onload = function getPrograms() {
     $(".ba, .ma, .phd, .cert").css("display", "block");
     $(".container").css("display", "block");
     var glanceExpander =
@@ -665,7 +664,7 @@ var $ = window.jQuery;
       // grabbing content for all programs
       function getProgramContent(programId, currentCatalogId, pageTitle) {
         $.get(
-          "API" +
+          "" +
           programId +
           "&catalog=" +
           currentCatalogId,
