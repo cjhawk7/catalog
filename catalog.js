@@ -1,6 +1,7 @@
 // posting degrees and programs
+var $ = window.jQuery;
 !(function ($) {
-  window.onload = function getPrograms() {
+  function getPrograms() {
     $(".ba, .ma, .phd, .cert").css("display", "block");
     $(".container").css("display", "block");
     var glanceExpander =
@@ -471,7 +472,7 @@
       }
       // grabbing all catalogs and their id's and program page titles
       $.get(
-        "http://ncu.apis.acalog.com/v1/content?key=eac7d337c6eba831d33fa2118a162c71535b50a5&format=xml&method=getCatalogs",
+        "API",
         function getCatalogId(data) {
           //grabbing most recent catalog number, first value on second children object is the most recent
           var currentCatalogId = data.children[0].children[1].id.replace(
@@ -540,7 +541,7 @@
         }
         // grabbing list of programs based on catalog id and pagetitle we're currently on
         $.get(
-          "http://ncu.apis.acalog.com/v1/search/programs?key=eac7d337c6eba831d33fa2118a162c71535b50a5&format=xml&method=search&catalog=" +
+          "API" +
           currentCatalogId +
           "&query=" +
           pageTitle +
@@ -664,7 +665,7 @@
       // grabbing content for all programs
       function getProgramContent(programId, currentCatalogId, pageTitle) {
         $.get(
-          "http://ncu.apis.acalog.com/v1/content?key=eac7d337c6eba831d33fa2118a162c71535b50a5&format=xml&method=getItems&type=programs&ids[]=" +
+          "API" +
           programId +
           "&catalog=" +
           currentCatalogId,
